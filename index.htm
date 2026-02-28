@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Montilla | Registro QR</title>
+  <meta name="theme-color" content="#0b0c0f" />
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <style>
+    :root{
+      --bg:#0b0c0f;
+      --line: rgba(255,255,255,.12);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.62);
+      --ok:#2bd576;
+      --bad:#ff3b3b;
+      --radius:18px;
+      --shadow: 0 16px 44px rgba(0,0,0,.48);
+      --shadowSoft: 0 10px 26px rgba(0,0,0,.35);
+      --glass: saturate(140%) blur(10px);
+      --ring: 0 0 0 4px rgba(255,255,255,.08);
+    }
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(1100px 600px at 15% -10%, rgba(255,0,0,.16), transparent 58%),
+        radial-gradient(900px 520px at 100% 0%, rgba(255,255,255,.07), transparent 55%),
+        radial-gradient(900px 520px at 40% 110%, rgba(255,255,255,.05), transparent 55%),
+        var(--bg);
+      color: var(--text);
+    }
+    .app{ max-width:760px; margin:0 auto; padding:14px; padding-bottom:98px; }
+
+    .top{
+      display:flex; align-items:center; gap:12px;
+      padding:12px 14px;
+      border:1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      border-radius: var(--radius);
+      box-shadow: var(--shadowSoft);
+      backdrop-filter: var(--glass);
+      position: sticky; top: 10px; z-index: 5;
+    }
+    .brand{ display:flex; align-items:center; gap:12px; min-width:0; }
+    .top img{ height:32px; width:auto; object-fit:contain; display:block; }
+    .name{ font-weight:900; font-size:14px; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 80vw; }
+    .sub{ font-size:12px; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 80vw; }
+
+    .card{
+      margin-top:12px;
+      border:1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      backdrop-filter: var(--glass);
+    }
+    .pad{ padding:12px; }
+
+    #reader{
+      width:100%;
+      border-radius:16px;
+      overflow:hidden;
+      background:#000;
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow: 0 10px 24px rgba(0,0,0,.40);
+      min-height: 240px;
+    }
+
+    .hint{
+      margin-top:10px;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.16);
+      color: rgba(255,255,255,.75);
+      font-size:12px;
+    }
+    .hint b{ color: rgba(255,255,255,.92); font-weight:900; }
+
+    .badge{
+      font-size:11px; font-weight:900;
+      padding:7px 10px; border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.72);
+      white-space: nowrap;
+    }
+
+    input, select{
+      width:100%;
+      margin-top:10px;
+      padding:13px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(0,0,0,.22);
+      color: var(--text);
+      font-size:14px;
+      outline:none;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+      appearance:none;
+    }
+    input:focus, select:focus{
+      border-color: rgba(255,255,255,.28);
+      box-shadow: var(--ring), inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    input::placeholder{ color: rgba(255,255,255,.42); }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .row2{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px; }
+
+    .status{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.20);
+      font-size:13px;
+      color: rgba(255,255,255,.78);
+      word-break: break-word;
+      display:flex; align-items:flex-start; gap:10px;
+      line-height:1.25;
+    }
+    .dot{
+      width:10px; height:10px; border-radius:99px;
+      background: rgba(255,255,255,.35);
+      box-shadow: 0 0 0 4px rgba(255,255,255,.06);
+      flex:0 0 auto; margin-top:3px;
+    }
+    .dot.ok{ background: var(--ok); box-shadow: 0 0 0 4px rgba(43,213,118,.12); }
+    .dot.bad{ background: var(--bad); box-shadow: 0 0 0 4px rgba(255,59,59,.12); }
+
+    .readbox{
+      margin-top:12px;
+      padding:12px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.18);
+    }
+    .readhead{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+    .ttl{ font-weight:950; font-size:12px; letter-spacing:.35px; color: rgba(255,255,255,.84); }
+    .list{ display:flex; flex-direction:column; gap:10px; }
+    .kv{
+      padding:11px 11px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      min-height:60px;
+    }
+    .k{ font-size:11px; color: rgba(255,255,255,.55); font-weight:900; letter-spacing:.2px; }
+    .v{ margin-top:5px; font-size:14px; font-weight:900; color: rgba(255,255,255,.94); word-break: break-word; }
+
+    .bottomBar{
+      position: fixed; left:0; right:0; bottom:0;
+      padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, rgba(11,12,15,.0), rgba(11,12,15,.72) 25%, rgba(11,12,15,.92));
+      backdrop-filter: var(--glass);
+      z-index: 20;
+    }
+    .bottomInner{ max-width:760px; margin:0 auto; display:flex; gap:10px; }
+    button.main{
+      border:0; border-radius:16px;
+      padding:14px 12px;
+      font-weight:950;
+      cursor:pointer;
+      flex:1; min-width:0;
+      box-shadow: 0 10px 20px rgba(0,0,0,.28);
+      white-space: nowrap;
+    }
+    button.main:active{ transform: scale(.98); }
+    .primary{ background: linear-gradient(180deg, #ffffff, #e9e9e9); color: #0b0c0f; }
+    .ghost{ background: rgba(255,255,255,.10); color: var(--text); border:1px solid rgba(255,255,255,.18); }
+    button.main[disabled]{ opacity:.45; filter: grayscale(1); cursor:not-allowed; }
+
+    .foot{ margin-top:12px; font-size:11px; color: rgba(255,255,255,.42); text-align:center; }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <div class="top">
+      <div class="brand">
+        <img src="logo.png" alt="Montilla" />
+        <div>
+          <div class="name">Registro de Salidas</div>
+          <div class="sub">Escaneo QR</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="pad">
+        <div id="reader"></div>
+
+        <div class="hint">
+          <span><b>Tip:</b> escanea y luego <b>ENVIAR</b>.</span>
+          <span class="badge">Sin foto</span>
+        </div>
+
+        <div class="row2">
+          <div>
+            <select id="camSelect">
+              <option value="">Selecciona cámara…</option>
+            </select>
+          </div>
+          <div>
+            <select id="opSelect">
+              <option value="">Selecciona operador…</option>
+            </select>
+          </div>
+        </div>
+
+        <input id="manual" class="mono" placeholder="Pegar QR manual (opcional)" />
+
+        <div class="status">
+          <span class="dot" id="dot"></span>
+          <span id="out">Listo</span>
+        </div>
+
+        <div class="readbox">
+          <div class="readhead">
+            <div class="ttl">VISTA PREVIA</div>
+            <div class="badge">CONS-OC-PROV-CAL-PESO-TIPO-ANCHO</div>
+          </div>
+
+          <div class="list">
+            <div class="kv"><div class="k">QR leído</div><div class="v mono" id="v_qr">-</div></div>
+            <div class="kv"><div class="k">Cons</div><div class="v" id="v_cons">-</div></div>
+            <div class="kv"><div class="k">OC</div><div class="v" id="v_oc">-</div></div>
+            <div class="kv"><div class="k">Proveedor</div><div class="v" id="v_prov">-</div></div>
+            <div class="kv"><div class="k">Calibre</div><div class="v" id="v_cal">-</div></div>
+            <div class="kv"><div class="k">Peso</div><div class="v" id="v_peso">-</div></div>
+            <div class="kv"><div class="k">Tipo</div><div class="v" id="v_tipo">-</div></div>
+            <div class="kv"><div class="k">Ancho</div><div class="v" id="v_ancho">-</div></div>
+          </div>
+        </div>
+
+        <div class="foot">Montilla</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottomBar">
+    <div class="bottomInner">
+      <button class="main ghost" id="btnStop">Detener</button>
+      <button class="main ghost" id="btnStart">Iniciar</button>
+      <button class="main primary" id="btnSend" disabled>Enviar</button>
+    </div>
+  </div>
+
+<script>
+  // ✅ URL de tu Web App
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbylArTJfmGwgxHpdy3SzICENqetzBhnjvTTWhuHLz9l8ivlZVZ-7IW-U6sUSDYm8yuh/exec";
+
+  let html5Qr = null;
+  let scanning = false;
+  let busy = false;
+  let lastRead = "";
+  let lastSent = "";
+
+  const out = document.getElementById("out");
+  const dot = document.getElementById("dot");
+  const manual = document.getElementById("manual");
+
+  const camSelect = document.getElementById("camSelect");
+  const opSelect  = document.getElementById("opSelect");
+
+  const btnStart = document.getElementById("btnStart");
+  const btnSend  = document.getElementById("btnSend");
+  const btnStop  = document.getElementById("btnStop");
+
+  const v_qr    = document.getElementById("v_qr");
+  const v_cons  = document.getElementById("v_cons");
+  const v_oc    = document.getElementById("v_oc");
+  const v_prov  = document.getElementById("v_prov");
+  const v_cal   = document.getElementById("v_cal");
+  const v_peso  = document.getElementById("v_peso");
+  const v_tipo  = document.getElementById("v_tipo");
+  const v_ancho = document.getElementById("v_ancho");
+
+  function setStatus(msg, state){
+    out.textContent = msg;
+    dot.classList.remove("ok","bad");
+    if(state === "ok") dot.classList.add("ok");
+    if(state === "bad") dot.classList.add("bad");
+  }
+
+  function sanitizeQR(text){
+    let t = String(text || "").replace(/\u200B|\u200C|\u200D|\uFEFF/g, "").trim();
+    t = t.split(/[\n\r]+/)[0].trim();
+    return t;
+  }
+
+  function parseNom(qr){
+    const s = sanitizeQR(qr).replace(/\s+/g,"");
+    const parts = s.split("-").filter(Boolean);
+    if(parts.length < 7) return null;
+    const cons = parts[0], oc = parts[1], prov = parts[2], cal = parts[3], peso = parts[4];
+    const ancho = parts[parts.length - 1];
+    const tipo = parts.slice(5, parts.length - 1).join("-");
+    if(!cons || !oc || !prov || !cal || !peso || !tipo || !ancho) return null;
+    return { cons, oc, prov, cal, peso, tipo, ancho };
+  }
+
+  function fillPreview(qr){
+    const clean = sanitizeQR(qr);
+    lastRead = clean;
+    v_qr.textContent = clean || "-";
+
+    const p = parseNom(clean);
+    if(!p){
+      v_cons.textContent = v_oc.textContent = v_prov.textContent = v_cal.textContent =
+      v_peso.textContent = v_tipo.textContent = v_ancho.textContent = "-";
+      updateActions_();
+      return;
+    }
+    v_cons.textContent  = p.cons;
+    v_oc.textContent    = p.oc;
+    v_prov.textContent  = p.prov;
+    v_cal.textContent   = p.cal;
+    v_peso.textContent  = p.peso;
+    v_tipo.textContent  = p.tipo;
+    v_ancho.textContent = p.ancho;
+    updateActions_();
+  }
+
+  function hasQr_(){ return !!sanitizeQR((lastRead || manual.value || "").trim()); }
+  function hasOperador_(){ return !!(opSelect.value || "").trim(); }
+
+  function updateActions_(){
+    btnSend.disabled = !(hasQr_() && hasOperador_());
+  }
+
+  manual.addEventListener("input", ()=>{ fillPreview(manual.value); });
+  opSelect.addEventListener("change", updateActions_);
+  camSelect.addEventListener("change", updateActions_);
+
+  async function fetchJson_(url, options){
+    const res = await fetch(url, options);
+    const txt = await res.text();
+    try { return JSON.parse(txt); }
+    catch(_) {
+      const head = (txt || "").slice(0, 160).replace(/\s+/g," ").trim();
+      throw new Error("Respuesta NO-JSON (permisos/deployment): " + head);
+    }
+  }
+
+  async function ensureCamPerm_(){
+    if(!navigator.mediaDevices?.getUserMedia) return;
+    const s = await navigator.mediaDevices.getUserMedia({ video: true });
+    s.getTracks().forEach(t=>t.stop());
+  }
+
+  async function startScanner_(){
+    if(scanning) return;
+
+    if(!camSelect.value){
+      await ensureCamPerm_();
+      await loadCameras_();
+    }
+
+    const camId = camSelect.value;
+    if(!camId){ setStatus("Selecciona cámara", "bad"); return; }
+
+    html5Qr = html5Qr || new Html5Qrcode("reader");
+    const config = { fps: 10, qrbox: { width: 260, height: 260 } };
+
+    await html5Qr.start(
+      { deviceId: { exact: camId } },
+      config,
+      (decodedText)=> onScan(decodedText),
+      ()=>{}
+    );
+    scanning = true;
+    setStatus("Escaneando", null);
+  }
+
+  async function stopScanner_(){
+    if(!html5Qr || !scanning) return;
+    try{
+      await html5Qr.stop();
+      await html5Qr.clear();
+    }catch(e){}
+    scanning = false;
+    setStatus("Escáner detenido", null);
+  }
+
+  async function onScan(decodedText){
+    if(busy) return;
+    busy = true;
+    try{
+      fillPreview(decodedText);
+      setStatus("Leído. ENVIAR.", "ok");
+    } finally {
+      setTimeout(()=>{ busy = false; }, 600);
+    }
+  }
+
+  btnStart.addEventListener("click", async ()=>{
+    try{ await startScanner_(); }
+    catch(err){ setStatus("Cámara: " + (err.message||err), "bad"); }
+  });
+
+  btnStop.addEventListener("click", async ()=>{ await stopScanner_(); });
+
+  async function loadCameras_(){
+    try{
+      const cams = await Html5Qrcode.getCameras();
+      camSelect.innerHTML = `<option value="">Selecciona cámara…</option>`;
+      if(!cams || !cams.length){
+        setStatus("Sin cámaras (o sin permiso aún)", "bad");
+        updateActions_();
+        return;
+      }
+      cams.forEach((c, idx)=>{
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = c.label ? c.label : ("Cámara " + (idx+1));
+        camSelect.appendChild(opt);
+      });
+      if(!camSelect.value && cams.length > 0) camSelect.value = cams[0].id;
+      updateActions_();
+    } catch(err){
+      setStatus("Cámaras: permiso pendiente. Toca INICIAR para permitir.", "bad");
+    }
+  }
+
+  async function loadOperators_(){
+    try{
+      opSelect.innerHTML = `<option value="">Cargando operadores…</option>`;
+      const data = await fetchJson_(APPS_SCRIPT_URL + "?action=operators&ts=" + Date.now());
+      const ops = (data && data.ok && Array.isArray(data.operators)) ? data.operators : [];
+
+      opSelect.innerHTML = `<option value="">Selecciona operador…</option>`;
+      ops.forEach(n=>{
+        const opt = document.createElement("option");
+        opt.value = n; opt.textContent = n;
+        opSelect.appendChild(opt);
+      });
+      updateActions_();
+    } catch(err){
+      opSelect.innerHTML = `<option value="">Error operadores</option>`;
+      setStatus("Operadores: " + (err.message||err), "bad");
+    }
+  }
+
+  async function postQR(){
+    const qr = sanitizeQR(lastRead || manual.value || "");
+    if(!qr) return setStatus("No hay QR", "bad");
+
+    const op = (opSelect.value || "").trim();
+    if(!op) return setStatus("Selecciona operador", "bad");
+
+    const p = parseNom(qr);
+    if(!p) return setStatus("Formato inválido (requiere 7)", "bad");
+
+    if(qr === lastSent) return setStatus("Ya se envió ese QR", "bad");
+    lastSent = qr;
+
+    setStatus("Enviando…", null);
+
+    try{
+      const data = await fetchJson_(APPS_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type":"text/plain;charset=utf-8" },
+        body: JSON.stringify({ qrText: qr, operador: op })
+      });
+
+      if(data && data.ok){
+        setStatus("OK (fila " + (data.row || "?") + ")", "ok");
+        manual.value = "";
+        lastRead = "";
+        fillPreview("");
+      } else {
+        setStatus((data && data.msg) ? data.msg : "Error", "bad");
+      }
+    } catch(err){
+      setStatus("Red/Script: " + (err.message||err), "bad");
+    } finally {
+      setTimeout(()=>{ lastSent=""; }, 1200);
+      updateActions_();
+    }
+  }
+
+  btnSend.addEventListener("click", postQR);
+
+  // init
+  loadCameras_();
+  loadOperators_();
+  updateActions_();
+</script>
+</body>
+</html>
